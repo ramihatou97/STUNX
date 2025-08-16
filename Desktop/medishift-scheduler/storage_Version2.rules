@@ -1,0 +1,37 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return request.auth.token.admin == true;
+    }
+    
+    // Schedule imports (admin only)
+    match /imports/{fileName} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() && 
+        request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+        request.resource.contentType.matches('application/(pdf|vnd.*|octet-stream)');
+    }
+    
+    // EPA attachments
+    match /epa-attachments/{epaId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        request.resource.size < 5 * 1024 * 1024; // 5MB limit
+    }
+    
+    // Profile pictures
+    match /profiles/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if request.auth.uid == userId &&
+        request.resource.size < 2 * 1024 * 1024 && // 2MB limit
+        request.resource.contentType.matches('image/.*');
+    }
+  }
+}

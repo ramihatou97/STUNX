@@ -40,6 +40,7 @@ module.exports = {
         alwaysTryTypes: true,
         project: './tsconfig.json',
       },
-       project: '../configs/tsconfig.json',
+      // Removed invalid 'project' property at this level
+    },
   },
 };

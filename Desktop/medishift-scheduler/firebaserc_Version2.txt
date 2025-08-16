@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "neuroman-prod",
+    "staging": "neuroman-staging",
+    "development": "neuroman-dev"
+  },
+  "targets": {
+    "neuroman-prod": {
+      "hosting": {
+        "app": ["medishift-prod"]
+      }
+    }
+  }
+}
