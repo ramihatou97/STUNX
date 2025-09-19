@@ -1,0 +1,156 @@
+# KOO Platform .gitignore
+
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.development
+*.key
+*.pem
+
+# Database
+*.sqlite
+*.db
+data/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# React build
+frontend/build/
+frontend/dist/
+
+# Browser automation
+browser_config.ini
+service_selectors.ini
+test_browser.py
+data/browser_sessions/
+data/browser_downloads/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Redis dumps
+dump.rdb
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Documentation builds
+docs/_build/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# User-specific files - exclude everything outside project directory
+# This prevents committing user directory contents
+../AppData/
+../Documents/
+../Desktop/
+../Downloads/
+../Music/
+../Pictures/
+../Videos/
+../.*/
+../Contacts/
+../CrossDevice/
+../Favorites/
+../IntelGraphicsProfiles/
+../OneDrive/
+../Searches/
+../KOO_*.md
+../Neurosurgical_*.md
+../SeeW_*.md
+../discharge-summary-*
+../koo/
+../koo_*
+../master/
+../examples/
+../src/
+../package*.json
+../tsconfig.json
+../ntuser.*
+../NTUSER.*
+../*.lnk
+../*.txt
+../*.pdf
+../*.png
+../*.jpeg
+../*.jpg
+../*.jsx
+../*.md
+../*.py
+../.bash_history
+../.gitconfig
+../.lesshst
+../.node_repl_history
+../.rbql_init_source.js
+../.viminfo
+../vscode-remote-wsl/
+
+# Exclude other projects in parent directory
+../medishift-scheduler/
+../ORNoteApp/
+../Raidionics-HF/

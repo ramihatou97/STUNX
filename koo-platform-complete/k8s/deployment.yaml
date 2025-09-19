@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: koo-backend
+  namespace: koo-platform
+  labels:
+    app: koo-backend
+    version: v2.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: koo-backend
+  template:
+    metadata:
+      labels:
+        app: koo-backend
+        version: v2.0.0
+    spec:
+      containers:
+      - name: koo-backend
+        image: koo-platform/backend:v2.0.0
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: koo-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: koo-secrets
+              key: redis-url
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: koo-secrets
+              key: secret-key
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: koo-api-keys
+              key: gemini-api-key
+        - name: CLAUDE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: koo-api-keys
+              key: claude-api-key
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: upload-storage
+          mountPath: /app/uploads
+        - name: log-storage
+          mountPath: /app/logs
+      volumes:
+      - name: upload-storage
+        persistentVolumeClaim:
+          claimName: koo-uploads-pvc
+      - name: log-storage
+        persistentVolumeClaim:
+          claimName: koo-logs-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: koo-backend-service
+  namespace: koo-platform
+spec:
+  selector:
+    app: koo-backend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: koo-platform-ingress
+  namespace: koo-platform
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  tls:
+  - hosts:
+    - api.koo-platform.com
+    - app.koo-platform.com
+    secretName: koo-platform-tls
+  rules:
+  - host: api.koo-platform.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: koo-backend-service
+            port:
+              number: 80
+  - host: app.koo-platform.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: koo-frontend-service
+            port:
+              number: 80
