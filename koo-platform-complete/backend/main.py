@@ -43,42 +43,43 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Admin: {settings.ADMIN_NAME} ({settings.ADMIN_EMAIL})")
 
-    # Initialize services with graceful error handling
-    # Initialize database
     try:
-        await init_database()
-        logger.info("Database initialized successfully")
-    except Exception as e:
-        logger.warning(f"Database initialization failed: {e}")
-        logger.info("Application will continue without database")
+        # Initialize services with graceful error handling
+        # Initialize database
+        try:
+            await init_database()
+            logger.info("Database initialized successfully")
+        except Exception as e:
+            logger.warning(f"Database initialization failed: {e}")
+            logger.info("Application will continue without database")
 
-    # Initialize Redis cache
-    try:
-        from core.redis_cache import redis_cache
-        await redis_cache.initialize()
-        logger.info("Redis cache initialized successfully")
-    except Exception as e:
-        logger.warning(f"Redis cache initialization failed: {e}")
-        logger.info("Application will continue without Redis cache")
+        # Initialize Redis cache
+        try:
+            from core.redis_cache import redis_cache
+            await redis_cache.initialize()
+            logger.info("Redis cache initialized successfully")
+        except Exception as e:
+            logger.warning(f"Redis cache initialization failed: {e}")
+            logger.info("Application will continue without Redis cache")
 
-    # Initialize task manager
-    try:
-        from core.task_manager import task_manager
-        logger.info("Task manager initialized successfully")
-    except Exception as e:
-        logger.warning(f"Task manager initialization failed: {e}")
-        logger.info("Application will continue without task manager")
+        # Initialize task manager
+        try:
+            from core.task_manager import task_manager
+            logger.info("Task manager initialized successfully")
+        except Exception as e:
+            logger.warning(f"Task manager initialization failed: {e}")
+            logger.info("Application will continue without task manager")
 
-    # Initialize AI services (placeholder)
-    try:
-        logger.info("AI services ready")
-    except Exception as e:
-        logger.warning(f"AI services initialization failed: {e}")
+        # Initialize AI services (placeholder)
+        try:
+            logger.info("AI services ready")
+        except Exception as e:
+            logger.warning(f"AI services initialization failed: {e}")
 
-    # Application is ready
-    logger.info("KOO Platform startup completed successfully")
+        # Application is ready
+        logger.info("KOO Platform startup completed successfully")
 
-    yield
+        yield
     finally:
         # Cleanup
         logger.info("Shutting down KOO Platform")
