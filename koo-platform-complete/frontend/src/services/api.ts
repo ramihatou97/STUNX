@@ -209,6 +209,51 @@ class ApiService {
     return this.request(`/api/v1/admin/health`);
   }
 
+  // Knowledge Pipeline API methods
+  async startKnowledgePipeline(query: any) {
+    return this.request(`/api/v1/knowledge/pipeline/start`, {
+      method: 'POST',
+      body: JSON.stringify(query)
+    });
+  }
+
+  async getPipelineStatus(executionId: string) {
+    return this.request(`/api/v1/knowledge/pipeline/${executionId}/status`);
+  }
+
+  async getKnowledgeSynthesis(executionId: string) {
+    return this.request(`/api/v1/knowledge/pipeline/${executionId}/synthesis`);
+  }
+
+  async getActivePipelines() {
+    return this.request(`/api/v1/knowledge/pipeline/active`);
+  }
+
+  async cancelPipeline(executionId: string) {
+    return this.request(`/api/v1/knowledge/pipeline/${executionId}/cancel`, {
+      method: 'POST'
+    });
+  }
+
+  async getPipelineHistory(limit: number = 20, offset: number = 0) {
+    return this.request(`/api/v1/knowledge/pipeline/history?limit=${limit}&offset=${offset}`);
+  }
+
+  async getPipelineMetrics() {
+    return this.request(`/api/v1/knowledge/pipeline/metrics`);
+  }
+
+  async getResearchTemplates() {
+    return this.request(`/api/v1/knowledge/pipeline/templates`);
+  }
+
+  async createResearchTemplate(name: string, template: any) {
+    return this.request(`/api/v1/knowledge/pipeline/templates`, {
+      method: 'POST',
+      body: JSON.stringify({ name, template })
+    });
+  }
+
   // Health check
   async healthCheck() {
     return this.request(`/health`);
