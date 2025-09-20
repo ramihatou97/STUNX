@@ -29,6 +29,19 @@ class Settings(BaseSettings):
     )
     DATABASE_POOL_SIZE: int = int(os.getenv("DATABASE_POOL_SIZE", "10"))
     DATABASE_MAX_OVERFLOW: int = int(os.getenv("DATABASE_MAX_OVERFLOW", "20"))
+    DATABASE_POOL_TIMEOUT: int = int(os.getenv("DATABASE_POOL_TIMEOUT", "30"))
+    DATABASE_POOL_RECYCLE: int = int(os.getenv("DATABASE_POOL_RECYCLE", "3600"))
+
+    # Database Circuit Breaker
+    DB_CIRCUIT_BREAKER_FAILURE_THRESHOLD: int = int(os.getenv("DB_CIRCUIT_BREAKER_FAILURE_THRESHOLD", "5"))
+    DB_CIRCUIT_BREAKER_RECOVERY_TIMEOUT: int = int(os.getenv("DB_CIRCUIT_BREAKER_RECOVERY_TIMEOUT", "60"))
+    DB_CIRCUIT_BREAKER_SUCCESS_THRESHOLD: int = int(os.getenv("DB_CIRCUIT_BREAKER_SUCCESS_THRESHOLD", "2"))
+
+    # Database Retry Configuration
+    DB_MAX_RETRIES: int = int(os.getenv("DB_MAX_RETRIES", "3"))
+    DB_RETRY_BASE_DELAY: float = float(os.getenv("DB_RETRY_BASE_DELAY", "1.0"))
+    DB_RETRY_MAX_DELAY: float = float(os.getenv("DB_RETRY_MAX_DELAY", "30.0"))
+    DB_RETRY_BACKOFF_MULTIPLIER: float = float(os.getenv("DB_RETRY_BACKOFF_MULTIPLIER", "2.0"))
 
     # Cache
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -43,6 +56,28 @@ class Settings(BaseSettings):
     GEMINI_ACCESS_METHOD: str = os.getenv("GEMINI_ACCESS_METHOD", "hybrid")
     CLAUDE_ACCESS_METHOD: str = os.getenv("CLAUDE_ACCESS_METHOD", "hybrid")
     PERPLEXITY_ACCESS_METHOD: str = os.getenv("PERPLEXITY_ACCESS_METHOD", "api")
+
+    # AI Service Error Handling
+    AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD: int = int(os.getenv("AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD", "5"))
+    AI_CIRCUIT_BREAKER_RECOVERY_TIMEOUT: int = int(os.getenv("AI_CIRCUIT_BREAKER_RECOVERY_TIMEOUT", "60"))
+    AI_CIRCUIT_BREAKER_SUCCESS_THRESHOLD: int = int(os.getenv("AI_CIRCUIT_BREAKER_SUCCESS_THRESHOLD", "2"))
+
+    # AI Service Retry Configuration
+    AI_MAX_RETRIES: int = int(os.getenv("AI_MAX_RETRIES", "3"))
+    AI_RETRY_BASE_DELAY: float = float(os.getenv("AI_RETRY_BASE_DELAY", "1.0"))
+    AI_RETRY_MAX_DELAY: float = float(os.getenv("AI_RETRY_MAX_DELAY", "30.0"))
+    AI_RETRY_BACKOFF_MULTIPLIER: float = float(os.getenv("AI_RETRY_BACKOFF_MULTIPLIER", "2.0"))
+
+    # AI Service Rate Limiting
+    AI_DEFAULT_REQUESTS_PER_MINUTE: int = int(os.getenv("AI_DEFAULT_REQUESTS_PER_MINUTE", "60"))
+    AI_DEFAULT_REQUESTS_PER_HOUR: int = int(os.getenv("AI_DEFAULT_REQUESTS_PER_HOUR", "1000"))
+    AI_DEFAULT_REQUESTS_PER_DAY: int = int(os.getenv("AI_DEFAULT_REQUESTS_PER_DAY", "10000"))
+    AI_DEFAULT_DAILY_BUDGET: float = float(os.getenv("AI_DEFAULT_DAILY_BUDGET", "10.0"))
+
+    # Health Check Configuration
+    AI_HEALTH_CHECK_INTERVAL: int = int(os.getenv("AI_HEALTH_CHECK_INTERVAL", "60"))
+    DB_HEALTH_CHECK_INTERVAL: int = int(os.getenv("DB_HEALTH_CHECK_INTERVAL", "30"))
+    HEALTH_CHECK_TIMEOUT: int = int(os.getenv("HEALTH_CHECK_TIMEOUT", "5"))
 
     # Web Interface Settings
     GEMINI_WEB_ENABLED: bool = os.getenv("GEMINI_WEB_ENABLED", "true").lower() == "true"
@@ -77,6 +112,12 @@ class Settings(BaseSettings):
     # File Upload
     UPLOAD_MAX_SIZE: int = 50 * 1024 * 1024  # 50MB
     ALLOWED_FILE_TYPES: List[str] = ["pdf", "doc", "docx", "txt", "md", "png", "jpg", "jpeg"]
+
+    # Textbook Reference Library
+    TEXTBOOKS_PATH: str = os.getenv("TEXTBOOKS_PATH", "./data/textbooks")
+    TEXTBOOK_PROCESSING_BATCH_SIZE: int = int(os.getenv("TEXTBOOK_PROCESSING_BATCH_SIZE", "10"))
+    TEXTBOOK_SEARCH_LIMIT: int = int(os.getenv("TEXTBOOK_SEARCH_LIMIT", "50"))
+    TEXTBOOK_SUMMARY_MAX_LENGTH: int = int(os.getenv("TEXTBOOK_SUMMARY_MAX_LENGTH", "1000"))
 
     # Monitoring
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")

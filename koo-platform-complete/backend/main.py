@@ -27,7 +27,7 @@ from core.exceptions import (
 )
 
 # API route imports
-from api import chapters, research, admin, ai_services, knowledge_pipeline, enhanced_research, ai_knowledge
+from api import chapters, research, admin, ai_services, knowledge_pipeline, enhanced_research, ai_knowledge, monitoring, references
 
 # Enhanced logging setup
 logging.basicConfig(
@@ -231,6 +231,18 @@ app.include_router(
     ai_knowledge.router,
     prefix=f"{settings.API_V1_STR}/ai-knowledge",
     tags=["ai-knowledge"]
+)
+
+app.include_router(
+    monitoring.router,
+    prefix=f"{settings.API_V1_STR}",
+    tags=["monitoring"]
+)
+
+app.include_router(
+    references.router,
+    prefix=f"{settings.API_V1_STR}/references",
+    tags=["references"]
 )
 
 # Root endpoint

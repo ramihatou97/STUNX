@@ -16,6 +16,7 @@ import re
 from .hybrid_ai_manager import query_ai
 from .advanced_pubmed_analytics import AdvancedPubMedAnalytics
 from .knowledge_integration_pipeline import knowledge_pipeline
+from .reference_library import reference_library
 from ..core.config import settings
 from ..core.exceptions import ExternalServiceError
 
@@ -163,11 +164,14 @@ Requirements:
 - Use professional medical writing style
 - Include clinical pearls and key points
 - Reference latest research and guidelines
+- INTEGRATE textbook references when appropriate
 
 Previous Sections Context:
 {previous_context}
 
-Write the section content with proper medical terminology, evidence-based statements, and practical clinical guidance.""",
+{textbook_references}
+
+Write the section content with proper medical terminology, evidence-based statements, and practical clinical guidance. When textbook references are provided, integrate this authoritative knowledge and cite appropriately.""",
 
             "cross_reference": """Analyze this medical content and suggest intelligent cross-references:
 
@@ -288,6 +292,19 @@ Format as structured JSON with prioritized recommendations."""
         )
         research_data["papers"] = papers
 
+        # Get textbook references
+        try:
+            textbook_references = await reference_library.search_chapters(
+                query=request.topic,
+                specialty="neurosurgery",
+                limit=10
+            )
+            research_data["textbook_references"] = textbook_references
+            logger.info(f"Found {len(textbook_references)} relevant textbook chapters")
+        except Exception as e:
+            logger.warning(f"Failed to get textbook references: {e}")
+            research_data["textbook_references"] = []
+
         # Get citation network analysis
         try:
             citation_analysis = await self.analytics_service.analyze_citation_network(
@@ -372,6 +389,9 @@ Format as structured JSON with prioritized recommendations."""
             words_per_section = structure.word_count_target // len(structure.sections)
             citations_per_section = max(3, structure.citation_count_target // len(structure.sections))
 
+            # Prepare textbook reference context
+            textbook_context = self._format_textbook_references(research_data.get("textbook_references", []), section)
+
             # Create section-specific prompt
             section_prompt = self.generation_prompts["section_generation"].format(
                 section_title=section,
@@ -382,7 +402,8 @@ Format as structured JSON with prioritized recommendations."""
                 quality_level=request.quality_level.value,
                 word_count=words_per_section,
                 citation_count=citations_per_section,
-                previous_context=previous_context[-500:] if previous_context else "This is the first section"
+                previous_context=previous_context[-500:] if previous_context else "This is the first section",
+                textbook_references=textbook_context
             )
 
             try:
@@ -575,6 +596,48 @@ Add citations in Vancouver style where appropriate. Ensure claims are properly r
         except Exception as e:
             logger.error(f"Citation enhancement failed: {e}")
             return content
+
+    def _format_textbook_references(self, textbook_references: List[Any], section_title: str) -> str:
+        """Format textbook references for inclusion in AI prompts"""
+
+        if not textbook_references:
+            return "No specific textbook references found for this topic."
+
+        # Filter references most relevant to current section
+        relevant_refs = []
+        section_keywords = section_title.lower().split()
+
+        for ref in textbook_references:
+            # Check if reference is relevant to current section
+            title_words = ref.chapter_title.lower().split()
+            matching_words = set(section_keywords) & set(title_words)
+
+            if matching_words or ref.relevance_score > 0.7:
+                relevant_refs.append(ref)
+
+        # Sort by relevance and take top 3
+        relevant_refs = sorted(relevant_refs, key=lambda x: x.relevance_score, reverse=True)[:3]
+
+        if not relevant_refs:
+            return "No specific textbook references found for this section."
+
+        # Format references
+        reference_text = "AUTHORITATIVE TEXTBOOK REFERENCES:\n\n"
+
+        for i, ref in enumerate(relevant_refs, 1):
+            reference_text += f"{i}. **{ref.textbook_title}** - Chapter {ref.chapter_number or 'N/A'}: {ref.chapter_title}\n"
+            reference_text += f"   Relevance: {ref.relevance_score:.2f}\n"
+            reference_text += f"   Content excerpt: {ref.matching_text[:200]}...\n\n"
+
+        reference_text += """
+CITATION INSTRUCTIONS:
+- Reference these authoritative textbook chapters when appropriate
+- Use format: (Textbook Author, Chapter X: Title)
+- Ensure content aligns with established textbook knowledge
+- Note any areas where research contradicts or expands textbook information
+"""
+
+        return reference_text
 
 # Global instance
 ai_chapter_generator = AIChapterGenerator()
