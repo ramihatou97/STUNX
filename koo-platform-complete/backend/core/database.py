@@ -101,9 +101,8 @@ class DatabaseManager:
         self._health_check_timeout = settings.HEALTH_CHECK_TIMEOUT
 
         # Circuit breaker configuration from settings
-        self._circuit_breaker.config.failure_threshold = settings.DB_CIRCUIT_BREAKER_FAILURE_THRESHOLD
-        self._circuit_breaker.config.recovery_timeout = settings.DB_CIRCUIT_BREAKER_RECOVERY_TIMEOUT
-        self._circuit_breaker.config.success_threshold = settings.DB_CIRCUIT_BREAKER_SUCCESS_THRESHOLD
+        self._circuit_breaker.failure_threshold = settings.DB_CIRCUIT_BREAKER_FAILURE_THRESHOLD
+        self._circuit_breaker.recovery_timeout = settings.DB_CIRCUIT_BREAKER_RECOVERY_TIMEOUT
 
     async def initialize(self) -> None:
         """Initialize database connection with enhanced pooling and monitoring"""

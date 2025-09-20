@@ -43,28 +43,42 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Admin: {settings.ADMIN_NAME} ({settings.ADMIN_EMAIL})")
 
-    # Initialize services
+    # Initialize services with graceful error handling
+    # Initialize database
     try:
-        # Initialize database
         await init_database()
         logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.warning(f"Database initialization failed: {e}")
+        logger.info("Application will continue without database")
 
-        # Initialize Redis cache
+    # Initialize Redis cache
+    try:
         from core.redis_cache import redis_cache
         await redis_cache.initialize()
         logger.info("Redis cache initialized successfully")
+    except Exception as e:
+        logger.warning(f"Redis cache initialization failed: {e}")
+        logger.info("Application will continue without Redis cache")
 
-        # Initialize task manager
+    # Initialize task manager
+    try:
         from core.task_manager import task_manager
         logger.info("Task manager initialized successfully")
+    except Exception as e:
+        logger.warning(f"Task manager initialization failed: {e}")
+        logger.info("Application will continue without task manager")
 
-        # Initialize AI services (placeholder)
+    # Initialize AI services (placeholder)
+    try:
         logger.info("AI services ready")
+    except Exception as e:
+        logger.warning(f"AI services initialization failed: {e}")
 
-        # Application is ready
-        logger.info("KOO Platform startup completed successfully")
+    # Application is ready
+    logger.info("KOO Platform startup completed successfully")
 
-        yield
+    yield
 
     except Exception as e:
         logger.error(f"Failed to initialize application: {e}")
@@ -294,10 +308,12 @@ async def root():
         raise HTTPException(status_code=500, detail="Service temporarily unavailable")
 
 if __name__ == "__main__":
+    import os
+    port = int(os.getenv("PORT", 8000))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=settings.DEBUG,
         log_level=settings.LOG_LEVEL.lower()
     )
