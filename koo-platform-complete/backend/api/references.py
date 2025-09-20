@@ -13,10 +13,10 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel, Field
 
-from ..core.dependencies import get_current_user, get_db, CurrentUser
-from ..core.exceptions import ValidationError, ResourceNotFoundError, ExternalServiceError
-from ..models.references import Textbook, BookChapter, ChapterCitation, ContentReference
-from ..services.reference_library import reference_library, ProcessingStats, ChapterSearchResult
+from core.dependencies import get_current_user, get_db, CurrentUser
+from core.exceptions import ValidationError, ResourceNotFoundError, ExternalServiceError
+from models.references import Textbook, BookChapter, ChapterCitation, ContentReference
+from services.reference_library import reference_library, ProcessingStats, ChapterSearchResult
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

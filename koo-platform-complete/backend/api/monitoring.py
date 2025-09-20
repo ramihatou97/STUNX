@@ -8,12 +8,12 @@ from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
 from datetime import datetime
 
-from ..core.dependencies import get_current_user, CurrentUser
-from ..core.database import db_manager, check_database_health
-from ..core.redis_cache import redis_cache
-from ..core.task_manager import task_manager
-from ..services.hybrid_ai_manager import hybrid_ai_manager
-from ..core.ai_error_handling import ai_error_handler
+from core.dependencies import get_current_user, CurrentUser
+from core.database import db_manager, check_database_health
+from core.redis_cache import redis_cache
+from core.task_manager import task_manager
+from services.hybrid_ai_manager import hybrid_ai_manager
+from core.ai_error_handling import ai_error_handler
 
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 

@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
 from datetime import datetime
 
-from ..core.dependencies import get_current_user, CurrentUser
-from ..core.api_key_manager import (
+from core.dependencies import get_current_user, CurrentUser
+from core.api_key_manager import (
     api_key_manager,
     APIProvider,
     check_all_api_health,

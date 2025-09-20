@@ -8,15 +8,15 @@ from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
 
-from ..core.dependencies import get_current_user, CurrentUser
-from ..services.knowledge_integration_pipeline import (
+from core.dependencies import get_current_user, CurrentUser
+from services.knowledge_integration_pipeline import (
     knowledge_pipeline,
     start_research_pipeline,
     get_pipeline_status,
     ResearchQuery,
     PipelineStage
 )
-from ..core.exceptions import ExternalServiceError, ValidationError
+from core.exceptions import ExternalServiceError, ValidationError
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge-pipeline"])
 

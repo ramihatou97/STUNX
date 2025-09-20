@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
 from datetime import datetime
 
-from ..core.dependencies import get_current_user, CurrentUser
-from ..services.hybrid_ai_manager import (
+from core.dependencies import get_current_user, CurrentUser
+from services.hybrid_ai_manager import (
     hybrid_ai_manager,
     query_ai,
     query_multiple_ai,
@@ -19,8 +19,8 @@ from ..services.hybrid_ai_manager import (
     reset_ai_service_errors,
     reset_all_ai_services_errors
 )
-from ..core.exceptions import ExternalServiceError
-from ..core.ai_error_handling import ai_error_handler
+from core.exceptions import ExternalServiceError
+from core.ai_error_handling import ai_error_handler
 
 router = APIRouter(prefix="/ai", tags=["ai-services"])
 
