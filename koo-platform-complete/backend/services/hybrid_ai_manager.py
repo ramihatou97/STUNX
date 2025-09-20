@@ -19,6 +19,12 @@ from pathlib import Path
 from ..core.config import settings
 from ..core.exceptions import ExternalServiceError, APIKeyError
 from ..core.api_key_manager import api_key_manager, APIProvider
+from ..core.ai_error_handling import (
+    ai_error_handler,
+    execute_ai_operation,
+    CircuitBreakerConfig,
+    RateLimitConfig
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +82,9 @@ class HybridAIManager:
         # Load usage stats
         self._load_usage_stats()
 
+        # Register services with error handler
+        self._register_services_with_error_handler()
+
     def _initialize_service_configs(self):
         """Initialize configurations for all AI services"""
 
@@ -123,6 +132,33 @@ class HybridAIManager:
                 }
             )
         }
+
+    def _register_services_with_error_handler(self):
+        """Register AI services with the error handler"""
+        for service_name, config in self.service_configs.items():
+            # Configure circuit breaker based on service characteristics
+            circuit_config = CircuitBreakerConfig(
+                failure_threshold=5,
+                recovery_timeout=60,
+                success_threshold=2
+            )
+
+            # Configure rate limiting based on service config
+            rate_config = RateLimitConfig(
+                requests_per_minute=config.rate_limit_per_minute,
+                requests_per_hour=config.rate_limit_per_minute * 60,
+                requests_per_day=config.rate_limit_per_minute * 60 * 24,
+                cost_per_request=config.cost_per_1k_tokens,
+                daily_budget=config.daily_budget
+            )
+
+            ai_error_handler.register_service(
+                service_name=service_name,
+                circuit_breaker_config=circuit_config,
+                rate_limit_config=rate_config
+            )
+
+            logger.info(f"Registered {service_name} with AI error handler")
 
     def _load_usage_stats(self):
         """Load usage statistics from storage"""
@@ -491,7 +527,7 @@ class HybridAIManager:
         self._save_usage_stats()
 
     async def query(self, service: str, prompt: str, **kwargs) -> str:
-        """Main query method with intelligent routing"""
+        """Enhanced main query method with comprehensive error handling"""
 
         # Check if service is configured
         if service not in self.service_configs:
@@ -503,7 +539,8 @@ class HybridAIManager:
         # Determine access method
         use_api = self._should_use_api(service, estimated_tokens)
 
-        try:
+        # Define the operation to execute with error handling
+        async def execute_query():
             if use_api and config.api_available:
                 logger.info(f"Using API for {service}")
                 response = await self._call_api(service, prompt, **kwargs)
@@ -516,13 +553,21 @@ class HybridAIManager:
 
             elif config.web_available:
                 logger.info(f"Using web interface for {service}")
-                return await self._call_web(service, prompt, **kwargs)
+                response = await self._call_web(service, prompt, **kwargs)
+
+                # Update usage stats for web calls
+                self._update_usage_stats(service, web_call=True)
+
+                return response
 
             else:
                 raise ExternalServiceError(service, "No access method available")
 
+        # Execute with comprehensive error handling
+        try:
+            return await execute_ai_operation(service, execute_query)
         except Exception as e:
-            logger.error(f"Query failed for {service}: {e}")
+            logger.error(f"Query failed for {service} after error handling: {e}")
             raise
 
     async def batch_query(self, queries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -580,6 +625,93 @@ class HybridAIManager:
             for service, stats in self.usage_stats.items()
         }
 
+    def get_enhanced_service_status(self, service: str) -> Dict[str, Any]:
+        """Get comprehensive service status including error handling metrics"""
+        if service not in self.service_configs:
+            return {"error": "Service not configured"}
+
+        # Get basic usage stats
+        basic_stats = self.get_usage_stats().get(service, {})
+
+        # Get error handler status
+        error_handler_status = ai_error_handler.get_service_status(service)
+
+        # Get service configuration
+        config = self.service_configs[service]
+
+        # Combine all information
+        return {
+            "service_name": service,
+            "configuration": {
+                "provider": config.provider.value,
+                "access_method": config.access_method.value,
+                "api_available": config.api_available,
+                "web_available": config.web_available,
+                "daily_budget": config.daily_budget,
+                "cost_per_1k_tokens": config.cost_per_1k_tokens,
+                "max_tokens_per_request": config.max_tokens_per_request,
+                "rate_limit_per_minute": config.rate_limit_per_minute,
+            },
+            "usage_statistics": basic_stats,
+            "error_handling": error_handler_status,
+            "browser_session": {
+                "active": self.session_active,
+                "page_available": service in self.pages
+            },
+            "last_updated": datetime.now().isoformat()
+        }
+
+    def get_all_services_status(self) -> Dict[str, Any]:
+        """Get comprehensive status for all services"""
+        services_status = {}
+
+        for service_name in self.service_configs.keys():
+            services_status[service_name] = self.get_enhanced_service_status(service_name)
+
+        # Add overall system status
+        overall_status = {
+            "total_services": len(self.service_configs),
+            "browser_session_active": self.session_active,
+            "services": services_status,
+            "system_health": self._get_system_health(),
+            "timestamp": datetime.now().isoformat()
+        }
+
+        return overall_status
+
+    def _get_system_health(self) -> Dict[str, Any]:
+        """Get overall system health status"""
+        all_ai_status = ai_error_handler.get_all_services_status()
+
+        healthy_services = 0
+        total_services = len(self.service_configs)
+        circuit_breakers_open = 0
+        rate_limited_services = 0
+
+        for service_name in self.service_configs.keys():
+            if service_name in all_ai_status:
+                status = all_ai_status[service_name]
+                state = status.get("state", "unknown")
+
+                if state == "healthy":
+                    healthy_services += 1
+                elif state == "circuit_open":
+                    circuit_breakers_open += 1
+                elif state == "rate_limited":
+                    rate_limited_services += 1
+
+        health_percentage = (healthy_services / total_services * 100) if total_services > 0 else 0
+
+        return {
+            "overall_health": "healthy" if health_percentage >= 80 else "degraded" if health_percentage >= 50 else "unhealthy",
+            "health_percentage": round(health_percentage, 2),
+            "healthy_services": healthy_services,
+            "total_services": total_services,
+            "circuit_breakers_open": circuit_breakers_open,
+            "rate_limited_services": rate_limited_services,
+            "browser_session_active": self.session_active
+        }
+
     def reset_daily_stats(self):
         """Reset daily usage statistics"""
         for stats in self.usage_stats.values():
@@ -587,14 +719,126 @@ class HybridAIManager:
             stats.last_reset = datetime.now()
         self._save_usage_stats()
 
+    def reset_service_errors(self, service: str) -> bool:
+        """Reset error handling state for a specific service"""
+        if service not in self.service_configs:
+            return False
+
+        # Reset circuit breaker
+        circuit_reset = ai_error_handler.reset_circuit_breaker(service)
+
+        # Reset rate limiter
+        rate_reset = ai_error_handler.reset_rate_limiter(service)
+
+        # Reset usage stats
+        if service in self.usage_stats:
+            self.usage_stats[service] = UsageStats(last_reset=datetime.now())
+            self._save_usage_stats()
+
+        logger.info(f"Reset error handling state for {service}")
+        return circuit_reset and rate_reset
+
+    def reset_all_services_errors(self) -> Dict[str, bool]:
+        """Reset error handling state for all services"""
+        results = {}
+        for service in self.service_configs.keys():
+            results[service] = self.reset_service_errors(service)
+        return results
+
+    async def health_check_service(self, service: str) -> Dict[str, Any]:
+        """Perform health check for a specific service"""
+        if service not in self.service_configs:
+            return {"error": "Service not configured"}
+
+        config = self.service_configs[service]
+        health_result = {
+            "service": service,
+            "timestamp": datetime.now().isoformat(),
+            "api_health": False,
+            "web_health": False,
+            "overall_health": False
+        }
+
+        # Test API if available
+        if config.api_available:
+            try:
+                test_prompt = "Hello, this is a health check."
+                await self._call_api(service, test_prompt, max_tokens=10)
+                health_result["api_health"] = True
+                logger.info(f"API health check passed for {service}")
+            except Exception as e:
+                health_result["api_error"] = str(e)
+                logger.warning(f"API health check failed for {service}: {e}")
+
+        # Test web interface if available
+        if config.web_available and self.session_active:
+            try:
+                # Simple test - just check if we can get a page
+                page = await self.get_page(service)
+                if page:
+                    health_result["web_health"] = True
+                    logger.info(f"Web health check passed for {service}")
+            except Exception as e:
+                health_result["web_error"] = str(e)
+                logger.warning(f"Web health check failed for {service}: {e}")
+
+        # Overall health
+        health_result["overall_health"] = health_result["api_health"] or health_result["web_health"]
+
+        return health_result
+
+    async def health_check_all_services(self) -> Dict[str, Any]:
+        """Perform health check for all services"""
+        results = {}
+        for service in self.service_configs.keys():
+            results[service] = await self.health_check_service(service)
+
+        # Calculate overall system health
+        healthy_count = sum(1 for result in results.values() if result.get("overall_health", False))
+        total_count = len(results)
+
+        return {
+            "services": results,
+            "summary": {
+                "healthy_services": healthy_count,
+                "total_services": total_count,
+                "health_percentage": (healthy_count / total_count * 100) if total_count > 0 else 0,
+                "overall_healthy": healthy_count >= (total_count * 0.5)  # At least 50% healthy
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
 # Global instance
 hybrid_ai_manager = HybridAIManager()
 
-# Convenience functions
+# Enhanced Convenience Functions
 async def query_ai(service: str, prompt: str, **kwargs) -> str:
-    """Query AI service with hybrid access"""
+    """Query AI service with enhanced error handling and monitoring"""
     return await hybrid_ai_manager.query(service, prompt, **kwargs)
 
 async def query_multiple_ai(queries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Query multiple AI services"""
+    """Query multiple AI services with enhanced error handling"""
     return await hybrid_ai_manager.batch_query(queries)
+
+def get_ai_service_health(service: str) -> Dict[str, Any]:
+    """Get comprehensive health status for AI service"""
+    return hybrid_ai_manager.get_enhanced_service_status(service)
+
+def get_all_ai_services_health() -> Dict[str, Any]:
+    """Get comprehensive health status for all AI services"""
+    return hybrid_ai_manager.get_all_services_status()
+
+async def perform_ai_health_check(service: Optional[str] = None) -> Dict[str, Any]:
+    """Perform active health check for AI services"""
+    if service:
+        return await hybrid_ai_manager.health_check_service(service)
+    else:
+        return await hybrid_ai_manager.health_check_all_services()
+
+def reset_ai_service_errors(service: str) -> bool:
+    """Reset error state for specific AI service"""
+    return hybrid_ai_manager.reset_service_errors(service)
+
+def reset_all_ai_services_errors() -> Dict[str, bool]:
+    """Reset error state for all AI services"""
+    return hybrid_ai_manager.reset_all_services_errors()

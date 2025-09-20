@@ -1,1 +1,44 @@
-node_modules
+# Exclude everything by default
+*
+
+# Only include the KOO platform project
+!koo-platform-complete/
+!koo-platform-complete/**
+
+# Keep this gitignore file
+!.gitignore
+
+# Keep git configuration
+!.gitconfig
+
+# Exclude sensitive files even within project
+**/*.env
+**/.env.local
+**/secrets.*
+**/*_private.*
+**/private_*
+
+# Exclude common development files
+**/node_modules/
+**/.vscode/
+**/.idea/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/.pytest_cache/
+
+# Exclude OS files
+**/Thumbs.db
+**/.DS_Store
+**/desktop.ini
+
+# Exclude temporary files
+**/*.tmp
+**/*.temp
+**/*.log
+**/*.bak
+
+# Exclude Claude and other AI service files
+**/.claude/
+**/.cursor/
+**/.codegpt/

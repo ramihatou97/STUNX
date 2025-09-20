@@ -9,8 +9,18 @@ from pydantic import BaseModel
 from datetime import datetime
 
 from ..core.dependencies import get_current_user, CurrentUser
-from ..services.hybrid_ai_manager import hybrid_ai_manager, query_ai, query_multiple_ai
+from ..services.hybrid_ai_manager import (
+    hybrid_ai_manager,
+    query_ai,
+    query_multiple_ai,
+    get_ai_service_health,
+    get_all_ai_services_health,
+    perform_ai_health_check,
+    reset_ai_service_errors,
+    reset_all_ai_services_errors
+)
 from ..core.exceptions import ExternalServiceError
+from ..core.ai_error_handling import ai_error_handler
 
 router = APIRouter(prefix="/ai", tags=["ai-services"])
 
@@ -59,6 +69,23 @@ class UsageStatsResponse(BaseModel):
     total_web_calls: int
     total_cost: float
     last_updated: datetime
+
+class ServiceHealthResponse(BaseModel):
+    service_name: str
+    state: str
+    health: Dict[str, Any]
+    metrics: Dict[str, Any]
+    rate_limits: Dict[str, Any]
+    configuration: Dict[str, Any]
+    last_updated: str
+
+class SystemHealthResponse(BaseModel):
+    overall_health: str
+    health_percentage: float
+    healthy_services: int
+    total_services: int
+    services: Dict[str, ServiceHealthResponse]
+    timestamp: str
 
 @router.post("/query", response_model=AIQueryResponse, summary="Query AI service")
 async def query_ai_service(
@@ -313,4 +340,128 @@ async def cleanup_browser_session(current_user: CurrentUser = Depends(get_curren
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to cleanup browser: {str(e)}"
+        )
+
+@router.get("/services/health", summary="Get comprehensive AI services health")
+async def get_services_health(
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """Get comprehensive health status for all AI services"""
+    try:
+        health_status = get_all_ai_services_health()
+        return health_status
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get services health: {str(e)}"
+        )
+
+@router.get("/services/{service}/health", summary="Get specific service health")
+async def get_service_health(
+    service: str,
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """Get comprehensive health status for a specific AI service"""
+    try:
+        health_status = get_ai_service_health(service)
+        if "error" in health_status:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=health_status["error"]
+            )
+        return health_status
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get service health: {str(e)}"
+        )
+
+@router.post("/services/health-check", summary="Perform active health check")
+async def perform_health_check(
+    service: Optional[str] = None,
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """Perform active health check for AI services"""
+    try:
+        health_check_result = await perform_ai_health_check(service)
+        return health_check_result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Health check failed: {str(e)}"
+        )
+
+@router.post("/services/{service}/reset-errors", summary="Reset service errors")
+async def reset_service_errors(
+    service: str,
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """Reset error handling state for a specific AI service"""
+    try:
+        success = reset_ai_service_errors(service)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Service {service} not found or reset failed"
+            )
+
+        return {
+            "message": f"Error state reset for {service}",
+            "service": service,
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reset service errors: {str(e)}"
+        )
+
+@router.post("/services/reset-all-errors", summary="Reset all services errors")
+async def reset_all_services_errors_endpoint(
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """Reset error handling state for all AI services"""
+    try:
+        results = reset_all_ai_services_errors()
+
+        return {
+            "message": "Error state reset for all services",
+            "results": results,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reset all service errors: {str(e)}"
+        )
+
+@router.get("/services/metrics", summary="Get detailed service metrics")
+async def get_service_metrics(
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """Get detailed metrics for all AI services"""
+    try:
+        # Get metrics from error handler
+        error_handler_metrics = ai_error_handler.get_all_services_status()
+
+        # Get usage stats from hybrid manager
+        usage_stats = hybrid_ai_manager.get_usage_stats()
+
+        # Combine metrics
+        combined_metrics = {
+            "error_handling_metrics": error_handler_metrics,
+            "usage_statistics": usage_stats,
+            "system_health": hybrid_ai_manager._get_system_health(),
+            "timestamp": datetime.now().isoformat()
+        }
+
+        return combined_metrics
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get service metrics: {str(e)}"
         )
