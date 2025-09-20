@@ -57,7 +57,7 @@ class HealthResponse(BaseModel):
 class UserBase(BaseModel):
     """Base user fields"""
     username: str = Field(..., min_length=3, max_length=50)
-    email: str = Field(..., regex=r'^[^@]+@[^@]+\.[^@]+$')
+    email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
     full_name: str = Field(..., min_length=1, max_length=100)
     title: Optional[str] = Field(None, max_length=100)
     institution: Optional[str] = Field(None, max_length=200)
@@ -128,7 +128,7 @@ class ChapterBase(BaseModel):
 
 class ChapterCreate(ChapterBase):
     """Chapter creation schema"""
-    visibility: str = Field("public", regex="^(public|private|restricted)$")
+    visibility: str = Field("public", pattern="^(public|private|restricted)$")
 
 
 class ChapterUpdate(BaseModel):
@@ -140,7 +140,7 @@ class ChapterUpdate(BaseModel):
     keywords: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None
     status: Optional[ChapterStatus] = None
-    visibility: Optional[str] = Field(None, regex="^(public|private|restricted)$")
+    visibility: Optional[str] = Field(None, pattern="^(public|private|restricted)$")
 
 
 class ChapterResponse(ChapterBase):
@@ -215,7 +215,7 @@ class ResearchQuery(BaseModel):
     query: str = Field(..., min_length=1, max_length=500)
     max_results: int = Field(50, ge=1, le=200)
     years_back: int = Field(5, ge=1, le=20)
-    evidence_filter: Optional[str] = Field(None, regex="^(rct|systematic_review|clinical|case_series|cohort)$")
+    evidence_filter: Optional[str] = Field(None, pattern="^(rct|systematic_review|clinical|case_series|cohort)$")
     include_clinical_trials: bool = True
     min_impact_factor: float = Field(0.0, ge=0.0)
     specialty_focus: Optional[str] = None
@@ -258,9 +258,9 @@ class ResearchResponse(BaseModel):
 class ProposalBase(BaseModel):
     """Base proposal fields"""
     proposed_content: str = Field(..., min_length=1)
-    content_type: str = Field("enhancement", regex="^(enhancement|correction|addition|update|clarification)$")
+    content_type: str = Field("enhancement", pattern="^(enhancement|correction|addition|update|clarification)$")
     change_summary: Optional[str] = None
-    priority: str = Field("medium", regex="^(low|medium|high|critical)$")
+    priority: str = Field("medium", pattern="^(low|medium|high|critical)$")
 
 
 class ProposalCreate(ProposalBase):
@@ -369,7 +369,7 @@ class AnalyticsQuery(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     metric_type: Optional[str] = None
-    granularity: str = Field("day", regex="^(hour|day|week|month)$")
+    granularity: str = Field("day", pattern="^(hour|day|week|month)$")
 
 
 class AnalyticsResponse(BaseModel):
@@ -400,7 +400,7 @@ class SystemStatus(BaseModel):
 class UserManagement(BaseModel):
     """User management schema"""
     user_id: int
-    action: str = Field(..., regex="^(activate|deactivate|promote|demote|reset_password)$")
+    action: str = Field(..., pattern="^(activate|deactivate|promote|demote|reset_password)$")
     role: Optional[UserRole] = None
 
 

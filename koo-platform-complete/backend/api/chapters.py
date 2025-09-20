@@ -58,7 +58,7 @@ class ChapterUpdate(BaseModel):
     summary: Optional[str] = Field(None, max_length=2000)
     tags: Optional[List[str]] = None
     specialty: Optional[str] = Field(None, max_length=100)
-    status: Optional[str] = Field(None, regex="^(draft|review|published|archived)$")
+    status: Optional[str] = Field(None, pattern="^(draft|review|published|archived)$")
 
     @validator('title', 'summary')
     def sanitize_text_fields(cls, v):
