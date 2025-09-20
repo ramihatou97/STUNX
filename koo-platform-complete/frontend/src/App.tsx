@@ -18,6 +18,7 @@ import { AuthProvider } from './contexts/AuthContext';
 // Lazy load pages for better performance
 const ChapterViewer = lazy(() => import('./components/chapters/ChapterViewer'));
 const AcademicDashboard = lazy(() => import('./components/research/AcademicDashboard'));
+const EnhancedResearchAnalytics = lazy(() => import('./components/research/EnhancedResearchAnalytics'));
 
 // Simplified theme configuration
 const theme = createTheme({
@@ -131,6 +132,12 @@ const AppRoutes: React.FC = () => {
         <Route path="/research" element={
           <SimpleLayout>
             <AcademicDashboard />
+          </SimpleLayout>
+        } />
+
+        <Route path="/research/analytics" element={
+          <SimpleLayout>
+            <EnhancedResearchAnalytics />
           </SimpleLayout>
         } />
 
