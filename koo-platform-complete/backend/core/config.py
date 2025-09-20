@@ -13,7 +13,9 @@ class Settings(BaseSettings):
     # Application
     PROJECT_NAME: str = "KOO Platform - Personal Edition"
     VERSION: str = "2.0.0"
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    # Railway environment detection
+    IS_RAILWAY: bool = os.getenv("RAILWAY_PROJECT_ID") is not None
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production" if IS_RAILWAY else "development")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 
@@ -22,10 +24,10 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "admin@koo-platform.com")
     ADMIN_API_KEY: str = os.getenv("ADMIN_API_KEY", "koo-admin-key-change-this")
 
-    # Database
+    # Database (Railway compatible - use SQLite as fallback)
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql://koo_user:password@localhost:5432/koo_development"
+        "sqlite:///./koo_platform.db"  # File-based SQLite for Railway deployment
     )
     DATABASE_POOL_SIZE: int = int(os.getenv("DATABASE_POOL_SIZE", "10"))
     DATABASE_MAX_OVERFLOW: int = int(os.getenv("DATABASE_MAX_OVERFLOW", "20"))
@@ -43,8 +45,8 @@ class Settings(BaseSettings):
     DB_RETRY_MAX_DELAY: float = float(os.getenv("DB_RETRY_MAX_DELAY", "30.0"))
     DB_RETRY_BACKOFF_MULTIPLIER: float = float(os.getenv("DB_RETRY_BACKOFF_MULTIPLIER", "2.0"))
 
-    # Redis Cache Configuration
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    # Redis Cache Configuration (optional for Railway)
+    REDIS_URL: str = os.getenv("REDIS_URL", "")
     REDIS_MAX_CONNECTIONS: int = int(os.getenv("REDIS_MAX_CONNECTIONS", "20"))
     REDIS_RETRY_ON_TIMEOUT: bool = os.getenv("REDIS_RETRY_ON_TIMEOUT", "true").lower() == "true"
     REDIS_SOCKET_KEEPALIVE: bool = os.getenv("REDIS_SOCKET_KEEPALIVE", "true").lower() == "true"
@@ -55,9 +57,9 @@ class Settings(BaseSettings):
     CACHE_COMPRESSION_THRESHOLD: int = int(os.getenv("CACHE_COMPRESSION_THRESHOLD", "1024"))
     CACHE_MAX_VALUE_SIZE: int = int(os.getenv("CACHE_MAX_VALUE_SIZE", "10485760"))  # 10MB
 
-    # Celery Configuration
-    CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
-    CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
+    # Celery Configuration (optional for Railway)
+    CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "")
+    CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", "")
     CELERY_TASK_TIME_LIMIT: int = int(os.getenv("CELERY_TASK_TIME_LIMIT", "1800"))  # 30 minutes
     CELERY_TASK_SOFT_TIME_LIMIT: int = int(os.getenv("CELERY_TASK_SOFT_TIME_LIMIT", "1500"))  # 25 minutes
     CELERY_WORKER_PREFETCH_MULTIPLIER: int = int(os.getenv("CELERY_WORKER_PREFETCH_MULTIPLIER", "1"))
@@ -156,6 +158,27 @@ class Settings(BaseSettings):
     # Security Headers
     FORCE_HTTPS: bool = ENVIRONMENT == "production"
     SECURE_COOKIES: bool = ENVIRONMENT == "production"
+
+    # Railway-specific optimizations
+    @property
+    def is_railway_deployment(self) -> bool:
+        """Check if running on Railway"""
+        return self.IS_RAILWAY
+
+    @property
+    def database_configured(self) -> bool:
+        """Check if database is properly configured"""
+        return self.DATABASE_URL and not self.DATABASE_URL.startswith("sqlite://")
+
+    @property
+    def redis_configured(self) -> bool:
+        """Check if Redis is configured"""
+        return bool(self.REDIS_URL and self.REDIS_URL.strip())
+
+    @property
+    def celery_configured(self) -> bool:
+        """Check if Celery is configured"""
+        return bool(self.CELERY_BROKER_URL and self.CELERY_BROKER_URL.strip())
 
     class Config:
         env_file = ".env"
