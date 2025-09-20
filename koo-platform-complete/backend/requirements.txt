@@ -14,8 +14,11 @@ redis==5.0.1
 # HTTP Client for API calls
 httpx==0.25.2
 
+# Build tools (required for Python 3.12)
+setuptools>=65.0.0
+
 # Basic data processing
-pandas==2.1.3
+pandas==2.1.4
 
 # PubMed Integration
 biopython==1.81
@@ -40,7 +43,7 @@ isort==5.12.0
 
 # AI/ML dependencies (required for new features)
 aiohttp==3.9.1
-numpy==1.25.2
+numpy>=1.26.0
 networkx==3.2.1
 aiofiles==23.2.1
 python-magic==0.4.27
