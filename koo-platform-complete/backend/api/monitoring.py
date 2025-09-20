@@ -10,6 +10,8 @@ from datetime import datetime
 
 from ..core.dependencies import get_current_user, CurrentUser
 from ..core.database import db_manager, check_database_health
+from ..core.redis_cache import redis_cache
+from ..core.task_manager import task_manager
 from ..services.hybrid_ai_manager import hybrid_ai_manager
 from ..core.ai_error_handling import ai_error_handler
 
@@ -310,4 +312,111 @@ async def get_monitoring_dashboard(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get dashboard data: {str(e)}"
+        )
+
+@router.get("/cache", summary="Get cache monitoring data")
+async def get_cache_monitoring(
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """Get comprehensive cache monitoring information"""
+    try:
+        # Get cache health
+        cache_health = await redis_cache.health_check()
+
+        # Get cache metrics
+        cache_metrics = redis_cache.get_metrics()
+
+        return {
+            "health": cache_health,
+            "metrics": cache_metrics,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get cache monitoring data: {str(e)}"
+        )
+
+@router.get("/tasks", summary="Get task monitoring data")
+async def get_task_monitoring(
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """Get comprehensive task monitoring information"""
+    try:
+        # Get task metrics
+        task_metrics = task_manager.get_task_metrics()
+
+        # Get active tasks summary
+        active_tasks = await task_manager.get_active_tasks()
+        active_summary = {
+            "total_active": len(active_tasks),
+            "by_category": {},
+            "by_status": {}
+        }
+
+        for task in active_tasks:
+            category = task.category.value
+            status = task.status.value
+
+            active_summary["by_category"][category] = active_summary["by_category"].get(category, 0) + 1
+            active_summary["by_status"][status] = active_summary["by_status"].get(status, 0) + 1
+
+        return {
+            "metrics": task_metrics,
+            "active_tasks": active_summary,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get task monitoring data: {str(e)}"
+        )
+
+@router.get("/performance", summary="Get system performance metrics")
+async def get_performance_metrics(
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """Get comprehensive system performance metrics"""
+    try:
+        # Get database performance
+        db_metrics = db_manager.get_pool_metrics()
+
+        # Get cache performance
+        cache_metrics = redis_cache.get_metrics()
+
+        # Get task performance
+        task_metrics = task_manager.get_task_metrics()
+
+        # Calculate overall performance score
+        cache_hit_rate = cache_metrics.get("global", {}).get("hit_rate", 0)
+        task_success_rate = task_metrics.get("global", {}).get("success_rate", 0)
+        db_health_score = 1.0 if db_metrics.get("healthy", False) else 0.0
+
+        overall_score = (cache_hit_rate + task_success_rate + db_health_score) / 3
+
+        return {
+            "overall_performance_score": round(overall_score, 3),
+            "database": {
+                "pool_metrics": db_metrics,
+                "health_score": db_health_score
+            },
+            "cache": {
+                "hit_rate": cache_hit_rate,
+                "avg_response_time_ms": cache_metrics.get("global", {}).get("avg_response_time_ms", 0),
+                "total_operations": cache_metrics.get("global", {}).get("hits", 0) + cache_metrics.get("global", {}).get("misses", 0)
+            },
+            "tasks": {
+                "success_rate": task_success_rate,
+                "avg_execution_time": task_metrics.get("global", {}).get("avg_execution_time", 0),
+                "total_tasks": task_metrics.get("global", {}).get("total_tasks", 0)
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get performance metrics: {str(e)}"
         )

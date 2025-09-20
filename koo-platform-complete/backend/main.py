@@ -27,7 +27,7 @@ from core.exceptions import (
 )
 
 # API route imports
-from api import chapters, research, admin, ai_services, knowledge_pipeline, enhanced_research, ai_knowledge, monitoring, references
+from api import chapters, research, admin, ai_services, knowledge_pipeline, enhanced_research, ai_knowledge, monitoring, references, cache_management, task_management
 
 # Enhanced logging setup
 logging.basicConfig(
@@ -49,6 +49,15 @@ async def lifespan(app: FastAPI):
         await init_database()
         logger.info("Database initialized successfully")
 
+        # Initialize Redis cache
+        from core.redis_cache import redis_cache
+        await redis_cache.initialize()
+        logger.info("Redis cache initialized successfully")
+
+        # Initialize task manager
+        from core.task_manager import task_manager
+        logger.info("Task manager initialized successfully")
+
         # Initialize AI services (placeholder)
         logger.info("AI services ready")
 
@@ -63,6 +72,16 @@ async def lifespan(app: FastAPI):
     finally:
         # Cleanup
         logger.info("Shutting down KOO Platform")
+
+        # Close Redis cache connections
+        try:
+            from core.redis_cache import redis_cache
+            await redis_cache.close()
+            logger.info("Redis cache connections closed")
+        except Exception as e:
+            logger.error(f"Error closing Redis cache: {e}")
+
+        # Close database connections
         try:
             await close_database()
             logger.info("Database connections closed")
@@ -243,6 +262,18 @@ app.include_router(
     references.router,
     prefix=f"{settings.API_V1_STR}/references",
     tags=["references"]
+)
+
+app.include_router(
+    cache_management.router,
+    prefix=f"{settings.API_V1_STR}/cache",
+    tags=["cache-management"]
+)
+
+app.include_router(
+    task_management.router,
+    prefix=f"{settings.API_V1_STR}/tasks",
+    tags=["task-management"]
 )
 
 # Root endpoint
