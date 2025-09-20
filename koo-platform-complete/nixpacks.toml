@@ -1,0 +1,25 @@
+# Nixpacks configuration for Railway deployment
+# Alternative to railway.json
+
+[providers]
+python = "3.11"
+
+[variables]
+NIXPACKS_PYTHON_VERSION = "3.11"
+
+[phases.setup]
+nixPkgs = ["python311", "gcc", "pkg-config"]
+
+[phases.install]
+cmds = [
+  "cd backend",
+  "pip install --upgrade pip",
+  "pip install -r requirements.txt"
+]
+
+[start]
+cmd = "cd backend && python main.py"
+
+[healthcheck]
+path = "/health"
+timeout = 300
