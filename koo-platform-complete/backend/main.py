@@ -79,10 +79,6 @@ async def lifespan(app: FastAPI):
     logger.info("KOO Platform startup completed successfully")
 
     yield
-
-    except Exception as e:
-        logger.error(f"Failed to initialize application: {e}")
-        raise
     finally:
         # Cleanup
         logger.info("Shutting down KOO Platform")
