@@ -43,8 +43,26 @@ class Settings(BaseSettings):
     DB_RETRY_MAX_DELAY: float = float(os.getenv("DB_RETRY_MAX_DELAY", "30.0"))
     DB_RETRY_BACKOFF_MULTIPLIER: float = float(os.getenv("DB_RETRY_BACKOFF_MULTIPLIER", "2.0"))
 
-    # Cache
+    # Redis Cache Configuration
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    REDIS_MAX_CONNECTIONS: int = int(os.getenv("REDIS_MAX_CONNECTIONS", "20"))
+    REDIS_RETRY_ON_TIMEOUT: bool = os.getenv("REDIS_RETRY_ON_TIMEOUT", "true").lower() == "true"
+    REDIS_SOCKET_KEEPALIVE: bool = os.getenv("REDIS_SOCKET_KEEPALIVE", "true").lower() == "true"
+    REDIS_HEALTH_CHECK_INTERVAL: int = int(os.getenv("REDIS_HEALTH_CHECK_INTERVAL", "30"))
+
+    # Cache Configuration
+    CACHE_DEFAULT_TTL: int = int(os.getenv("CACHE_DEFAULT_TTL", "3600"))
+    CACHE_COMPRESSION_THRESHOLD: int = int(os.getenv("CACHE_COMPRESSION_THRESHOLD", "1024"))
+    CACHE_MAX_VALUE_SIZE: int = int(os.getenv("CACHE_MAX_VALUE_SIZE", "10485760"))  # 10MB
+
+    # Celery Configuration
+    CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
+    CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
+    CELERY_TASK_TIME_LIMIT: int = int(os.getenv("CELERY_TASK_TIME_LIMIT", "1800"))  # 30 minutes
+    CELERY_TASK_SOFT_TIME_LIMIT: int = int(os.getenv("CELERY_TASK_SOFT_TIME_LIMIT", "1500"))  # 25 minutes
+    CELERY_WORKER_PREFETCH_MULTIPLIER: int = int(os.getenv("CELERY_WORKER_PREFETCH_MULTIPLIER", "1"))
+    CELERY_TASK_ACKS_LATE: bool = os.getenv("CELERY_TASK_ACKS_LATE", "true").lower() == "true"
+    CELERY_RESULT_EXPIRES: int = int(os.getenv("CELERY_RESULT_EXPIRES", "3600"))  # 1 hour
 
     # AI API Keys
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
@@ -112,6 +130,18 @@ class Settings(BaseSettings):
     # File Upload
     UPLOAD_MAX_SIZE: int = 50 * 1024 * 1024  # 50MB
     ALLOWED_FILE_TYPES: List[str] = ["pdf", "doc", "docx", "txt", "md", "png", "jpg", "jpeg"]
+
+    # PDF Processing Configuration
+    PDF_MAX_FILE_SIZE: int = int(os.getenv("PDF_MAX_FILE_SIZE", str(100 * 1024 * 1024)))  # 100MB
+    PDF_MAX_PAGES: int = int(os.getenv("PDF_MAX_PAGES", "1000"))
+    PDF_MEMORY_LIMIT: int = int(os.getenv("PDF_MEMORY_LIMIT", str(512 * 1024 * 1024)))  # 512MB
+    PDF_CHUNK_SIZE: int = int(os.getenv("PDF_CHUNK_SIZE", str(8 * 1024 * 1024)))  # 8MB chunks
+    PDF_POOL_SIZE: int = int(os.getenv("PDF_POOL_SIZE", "5"))  # Parser pool size
+    PDF_PROCESSING_TIMEOUT: int = int(os.getenv("PDF_PROCESSING_TIMEOUT", "1800"))  # 30 minutes
+    PDF_PAGE_BATCH_SIZE: int = int(os.getenv("PDF_PAGE_BATCH_SIZE", "10"))  # Pages per batch
+    PDF_CACHE_TTL: int = int(os.getenv("PDF_CACHE_TTL", "86400"))  # 24 hours
+    PDF_CHECKPOINT_INTERVAL: int = int(os.getenv("PDF_CHECKPOINT_INTERVAL", "50"))  # Pages between checkpoints
+    PDF_MEMORY_CHECK_INTERVAL: int = int(os.getenv("PDF_MEMORY_CHECK_INTERVAL", "10"))  # Pages between memory checks
 
     # Textbook Reference Library
     TEXTBOOKS_PATH: str = os.getenv("TEXTBOOKS_PATH", "./data/textbooks")

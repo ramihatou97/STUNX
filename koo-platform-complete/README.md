@@ -31,16 +31,26 @@ PUBMED_API_KEY="your_pubmed_api_key"
 
 ### Development Mode
 ```bash
-# Start all services
+# Start all services (includes Redis, Celery workers)
 docker-compose up -d
 
 # Or run components separately:
-# Backend
+# 1. Start Redis
+redis-server
+
+# 2. Start Celery Worker
+cd backend
+python celery_worker.py worker --loglevel=info
+
+# 3. Start Celery Beat (scheduled tasks)
+celery -A core.task_manager.celery_app beat --loglevel=info
+
+# 4. Backend
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --reload
 
-# Frontend
+# 5. Frontend
 cd frontend
 npm install
 npm start
@@ -56,6 +66,12 @@ kubectl apply -f k8s/
 ```
 
 ## 🔧 Architecture
+
+### Enhanced Performance & Reliability
+- **Multi-level Redis Caching** - Application, database, API, and session caching with intelligent compression
+- **Background Task Management** - Celery-based async processing for AI queries, PDF processing, and maintenance
+- **Circuit Breaker Patterns** - Automatic failure detection and recovery for all external services
+- **Comprehensive Monitoring** - Real-time health checks, metrics, and alerting for all system components
 
 ### Simplified Authentication
 - **No user registration/login** - you are always authenticated
