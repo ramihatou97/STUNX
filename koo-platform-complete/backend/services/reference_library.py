@@ -20,12 +20,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, text
 from sqlalchemy.orm import selectinload
 
-from ..models.references import Textbook, BookChapter, ChapterCitation, ContentReference, ReferenceSearchIndex
-from ..core.config import settings
-from ..core.exceptions import ValidationError, ResourceNotFoundError, ExternalServiceError
-from ..core.database import db_manager
+from models.references import Textbook, BookChapter, ChapterCitation, ContentReference, ReferenceSearchIndex
+from core.config import settings
+from core.exceptions import ValidationError, ResourceNotFoundError, ExternalServiceError
+from core.database import db_manager
 from .hybrid_ai_manager import query_ai
-from ..utils.text_processing import extract_keywords, clean_text, extract_medical_terms, extract_citations
+from utils.text_processing import extract_keywords, clean_text, extract_medical_terms, extract_citations
 
 logger = logging.getLogger(__name__)
 

@@ -17,8 +17,8 @@ from .hybrid_ai_manager import hybrid_ai_manager, query_ai
 from .enhanced_pubmed import enhanced_pubmed_service
 from .advanced_pubmed_analytics import AdvancedPubMedAnalytics
 from .pubmed_service import PubMedService
-from ..core.exceptions import ExternalServiceError, ValidationError
-from ..core.config import settings
+from core.exceptions import ExternalServiceError, ValidationError
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

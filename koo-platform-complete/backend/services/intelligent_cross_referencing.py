@@ -16,8 +16,8 @@ import networkx as nx
 from .hybrid_ai_manager import query_ai
 from .smart_tagging import neurosurgical_tagger, TagType
 from .semantic_search import semantic_search_engine
-from ..core.config import settings
-from ..core.exceptions import ExternalServiceError
+from core.config import settings
+from core.exceptions import ExternalServiceError
 
 logger = logging.getLogger(__name__)
 

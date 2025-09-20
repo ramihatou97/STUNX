@@ -17,8 +17,8 @@ import networkx as nx
 from datetime import date
 
 from .enhanced_pubmed import enhanced_pubmed_service, NeurosurgicalPaper
-from ..core.config import settings
-from ..core.exceptions import ExternalServiceError
+from core.config import settings
+from core.exceptions import ExternalServiceError
 
 logger = logging.getLogger(__name__)
 

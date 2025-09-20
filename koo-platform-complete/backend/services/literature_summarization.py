@@ -15,8 +15,8 @@ from collections import defaultdict, Counter
 
 from .hybrid_ai_manager import query_ai
 from .advanced_pubmed_analytics import AdvancedPubMedAnalytics
-from ..core.config import settings
-from ..core.exceptions import ExternalServiceError
+from core.config import settings
+from core.exceptions import ExternalServiceError
 
 logger = logging.getLogger(__name__)
 

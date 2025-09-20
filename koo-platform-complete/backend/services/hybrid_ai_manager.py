@@ -16,10 +16,10 @@ from playwright.async_api import async_playwright, Browser, Page, Playwright
 import os
 from pathlib import Path
 
-from ..core.config import settings
-from ..core.exceptions import ExternalServiceError, APIKeyError
-from ..core.api_key_manager import api_key_manager, APIProvider
-from ..core.ai_error_handling import (
+from core.config import settings
+from core.exceptions import ExternalServiceError, APIKeyError
+from core.api_key_manager import api_key_manager, APIProvider
+from core.ai_error_handling import (
     ai_error_handler,
     execute_ai_operation,
     CircuitBreakerConfig,
