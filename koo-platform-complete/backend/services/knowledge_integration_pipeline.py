@@ -15,6 +15,8 @@ import uuid
 
 from .hybrid_ai_manager import hybrid_ai_manager, query_ai
 from .enhanced_pubmed import enhanced_pubmed_service
+from .advanced_pubmed_analytics import AdvancedPubMedAnalytics
+from .pubmed_service import PubMedService
 from ..core.exceptions import ExternalServiceError, ValidationError
 from ..core.config import settings
 
@@ -111,6 +113,10 @@ class KnowledgeIntegrationPipeline:
             "Intraoperative Monitoring", "Brain Mapping", "Tumor Resection"
         ]
 
+        # Initialize enhanced analytics service
+        self.pubmed_service = PubMedService()
+        self.analytics_service = AdvancedPubMedAnalytics(self.pubmed_service)
+
     async def execute_research_pipeline(self, query: ResearchQuery) -> str:
         """Execute complete research pipeline"""
         execution_id = str(uuid.uuid4())
@@ -161,16 +167,33 @@ class KnowledgeIntegrationPipeline:
         return execution_id
 
     async def _stage_research_gathering(self, execution: PipelineExecution):
-        """Stage 1: Gather research from multiple sources"""
+        """Stage 1: Gather research from multiple sources with enhanced analytics"""
         execution.stage = PipelineStage.RESEARCH_GATHERING
         logger.info(f"Pipeline {execution.execution_id}: Starting research gathering")
 
         # Enhance query with neurosurgical context
         enhanced_query = self._enhance_query_with_neurosurgical_context(execution.query)
 
-        # Gather from PubMed
+        # Gather from PubMed with enhanced analytics
         pubmed_results = await self._gather_from_pubmed(enhanced_query)
         execution.results.extend(pubmed_results)
+
+        # Add citation network analysis for the topic
+        try:
+            citation_analysis = await self.analytics_service.analyze_citation_network(
+                topic=execution.query.topic,
+                max_papers=30,
+                years_back=3
+            )
+
+            # Add citation insights to execution metadata
+            if not hasattr(execution, 'metadata'):
+                execution.metadata = {}
+            execution.metadata['citation_analysis'] = citation_analysis
+
+            logger.info(f"Pipeline {execution.execution_id}: Added citation network analysis")
+        except Exception as e:
+            logger.warning(f"Citation analysis failed: {e}")
 
         # Gather from Perplexity (real-time research)
         perplexity_results = await self._gather_from_perplexity(enhanced_query)
@@ -179,6 +202,17 @@ class KnowledgeIntegrationPipeline:
         # Use Gemini for deep research analysis
         gemini_results = await self._gather_from_gemini(enhanced_query)
         execution.results.extend(gemini_results)
+
+        # Get research trend insights
+        try:
+            trend_analysis = await self.analytics_service.analyze_research_trends(
+                specialty=execution.query.topic,
+                years=5
+            )
+            execution.metadata['trend_analysis'] = trend_analysis
+            logger.info(f"Pipeline {execution.execution_id}: Added trend analysis")
+        except Exception as e:
+            logger.warning(f"Trend analysis failed: {e}")
 
         logger.info(f"Pipeline {execution.execution_id}: Gathered {len(execution.results)} research results")
 
@@ -363,7 +397,32 @@ class KnowledgeIntegrationPipeline:
             return []
 
     async def _calculate_quality_score(self, result: ResearchResult) -> float:
-        """Calculate quality score for research result"""
+        """Calculate enhanced quality score using analytics service"""
+        try:
+            # Convert ResearchResult to format expected by analytics service
+            article_data = {
+                'title': result.title,
+                'abstract': result.content,
+                'journal': result.journal,
+                'pub_date': result.publication_date,
+                'pmid': getattr(result, 'pmid', None)
+            }
+
+            # Use enhanced quality scoring from analytics service
+            enhanced_score = await self.analytics_service.calculate_quality_score(article_data)
+
+            # Fallback to original scoring if analytics fails
+            if enhanced_score is None or enhanced_score == 0:
+                return await self._fallback_quality_score(result)
+
+            return enhanced_score
+
+        except Exception as e:
+            logger.warning(f"Enhanced quality scoring failed, using fallback: {e}")
+            return await self._fallback_quality_score(result)
+
+    async def _fallback_quality_score(self, result: ResearchResult) -> float:
+        """Fallback quality score calculation"""
         score = 0.0
 
         # Citation count factor
